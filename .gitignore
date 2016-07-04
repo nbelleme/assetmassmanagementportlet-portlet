@@ -3,3 +3,4 @@
 .settings
 .tern-project
 docroot/WEB-INF/classes
+docroot/css/.sass-cache/
