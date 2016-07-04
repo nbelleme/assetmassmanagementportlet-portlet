@@ -1,0 +1,13 @@
+.hidden {
+	display: none;
+}
+
+.list-scroll {
+	height: 16em;
+	overflow-y: scroll;
+}
+
+.list-assets {
+	height: 37em;
+	overflow-y: scroll;
+}
