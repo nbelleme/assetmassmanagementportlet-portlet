@@ -5,7 +5,9 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portlet.asset.model.AssetCategory;
 import com.liferay.portlet.asset.model.AssetEntry;
+import com.liferay.portlet.asset.service.AssetCategoryLocalServiceUtil;
 import com.liferay.portlet.asset.service.AssetEntryLocalServiceUtil;
 import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
@@ -44,7 +46,7 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 	private static final String CALENDAR_EVENT_NAME = "asset-type-calendar-event";
 	private static final String WEB_CONTENT_NAME = "asset-type-web-content";
 	
-	public static Map<String, List<String>> assetsMap = new HashMap<String, List<String>>();
+	public static Map<String, Map<Long,String>> assetsMap = new HashMap<String, Map<Long,String>>();
 	Locale language;
 	long groupID;
 	
@@ -53,7 +55,7 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 			throws PortletException, IOException {
 		ThemeDisplay themeDisplay = (ThemeDisplay) request
 				.getAttribute(WebKeys.THEME_DISPLAY);
-
+		//get groupId and Locale to filter Data
 		groupID = themeDisplay.getScopeGroupId();
 
 		long[] groups = {groupID};
@@ -69,6 +71,11 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 		setDLFileByType();
 		
 		request.setAttribute("assets", assetsMap);
+		
+		//Get Tags and categories
+		request.setAttribute("categories", getCategories());
+		
+		
 
 		super.render(request, response);
 	}
@@ -97,17 +104,17 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 	 * @param className the type of wanted Asset entries
 	 * @return an ArrayList of all entries titles instance of <i>className</i>
 	 */
-	private List<String> getAssetEntriesTitles(AssetEntryQuery query, String className) {
+	private Map<Long,String> getAssetEntriesTitles(AssetEntryQuery query, String className) {
 		List<AssetEntry> entries = null;
-		List<String> entriesTitles = null;
+		Map<Long,String> entriesTitles = null;
 		//Construct query
 		query.setClassName(className);
 		try {
 			entries = AssetEntryLocalServiceUtil.getEntries(query);
-			entriesTitles = new ArrayList<>(entries.size());
+			entriesTitles = new HashMap<>(entries.size());
 			//Extract titles from asset entries
 			for (AssetEntry entry : entries){
-				entriesTitles.add(entry.getTitle(language));
+				entriesTitles.put(entry.getEntryId(),entry.getTitle(language));
 			}
 		} catch (SystemException e) {
 			LOGGER.error("AssetMassManagementPortlet.getAssetEntriesTitles", e);
@@ -141,26 +148,42 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 	 */
 	private void setDLFileByType(){
 		Map<Long, String> filesTypes = getDLFileEntryType();
-		List<String> filesNames=null;
+		Map<Long, String> filesNames=null;
 		try {
 			List<DLFileEntry> files = DLFileEntryLocalServiceUtil.getDLFileEntries(0, DLFileEntryLocalServiceUtil.getDLFileEntriesCount());
 			//Create and put a list of files name for each type
 			for (Map.Entry<Long, String> type : filesTypes.entrySet()){
-				filesNames = new ArrayList<>();
+				filesNames = new HashMap<>();
 				for (DLFileEntry entry : files){
 					if((entry.getFileEntryTypeId() == type.getKey()) && (entry.getGroupId() == groupID)){
-						filesNames.add(entry.getTitle());
+						filesNames.put(entry.getFileEntryId(),entry.getTitle());
 					} 
 				}
 				assetsMap.put(type.getValue(), filesNames);
 			}
 		} catch (SystemException e) {
 			LOGGER.error("AssetMassManagementPortlet.setDLFileByType", e);
-			throw new RuntimeException();
+			throw new RuntimeException(e);
 		}	
 	}
 	
+	private Map<Long, String> getCategories(){
+		List<AssetCategory> assetsCategories = null;
+		Map<Long, String> categories = null;
+		
+		try {
+			assetsCategories = AssetCategoryLocalServiceUtil.getCategories();
+			categories = new HashMap<>(assetsCategories.size());
+			for (AssetCategory cat : assetsCategories){
+				categories.put(cat.getCategoryId(),cat.getTitle(language));
+			}
+		} catch (SystemException e) {
+			LOGGER.error("AssetMassManagementPortlet.getCategories", e);
+			throw new RuntimeException(e);
+		}
+		
+		return categories;
+	}
 	
 	//TODO get TagList
-	//TODO get CategoriesList
 }
