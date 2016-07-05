@@ -7,8 +7,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.theme.ThemeDisplay;
 import com.liferay.portlet.asset.model.AssetCategory;
 import com.liferay.portlet.asset.model.AssetEntry;
+import com.liferay.portlet.asset.model.AssetTag;
 import com.liferay.portlet.asset.service.AssetCategoryLocalServiceUtil;
 import com.liferay.portlet.asset.service.AssetEntryLocalServiceUtil;
+import com.liferay.portlet.asset.service.AssetTagLocalServiceUtil;
 import com.liferay.portlet.asset.service.persistence.AssetEntryQuery;
 import com.liferay.portlet.documentlibrary.model.DLFileEntry;
 import com.liferay.portlet.documentlibrary.model.DLFileEntryType;
@@ -17,7 +19,6 @@ import com.liferay.portlet.documentlibrary.service.DLFileEntryTypeLocalServiceUt
 import com.liferay.util.bridges.mvc.MVCPortlet;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -74,9 +75,8 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 		
 		//Get Tags and categories
 		request.setAttribute("categories", getCategories());
+		request.setAttribute("tags", getTags());
 		
-		
-
 		super.render(request, response);
 	}
 	
@@ -167,6 +167,10 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 		}	
 	}
 	
+	/**
+	 * Get all categories name in <i>language</i>
+	 * @return 	a Map with category.id and category.title
+	 */
 	private Map<Long, String> getCategories(){
 		List<AssetCategory> assetsCategories = null;
 		Map<Long, String> categories = null;
@@ -181,9 +185,28 @@ public class AssetMassManagementPortlet extends MVCPortlet {
 			LOGGER.error("AssetMassManagementPortlet.getCategories", e);
 			throw new RuntimeException(e);
 		}
-		
 		return categories;
 	}
 	
-	//TODO get TagList
+	/**
+	 * Get all tags
+	 * @return a Map with tag.id and tag.name
+	 */
+	private Map<Long,String> getTags(){
+		List<AssetTag> assetsTags = null;
+		Map<Long, String> tags = null;
+		
+		try {
+			assetsTags = AssetTagLocalServiceUtil.getTags();
+			tags = new HashMap<>(assetsTags.size());
+			for (AssetTag tag : assetsTags){
+				tags.put(tag.getTagId(), tag.getName());
+			}
+		} catch (SystemException e) {
+			LOGGER.error("AssetMassManagementPortlet.getTags",e);
+			throw new RuntimeException(e);
+		}
+		return tags;
+	}
+	
 }
